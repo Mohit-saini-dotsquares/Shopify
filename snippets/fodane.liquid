@@ -1,0 +1,45 @@
+<script>
+window.shopifyMultiCurrencies = [];
+{% assign fodane_currencies = shop.enabled_currencies | map: 'iso_code' | join: ',' %}
+window.shopifyMultiCurrencies = ("{{ fodane_currencies }}").split(",");
+window.shopFormat = {{ shop.money_format | json }};
+window.shopCurrency = "{{ shop.currency }}";
+{% if product %}
+window.productJSON = {{ product | json }};
+window.productJSON.options_with_values = {{ product.options_with_values | json }};
+{% for variant in product.variants %}
+window.productJSON.variants[{{ forloop.index }} - 1].inventory_quantity = {{variant.inventory_quantity }};
+{% endfor %}
+{% assign fodane_collectionIds = product.collections | map: 'id' | join: ',' %}
+window.productJSON.collectionIds = [{{ fodane_collectionIds }}];
+{% endif %}
+{% if cart %}
+window.cartJSON = {
+"products": [],
+"totalPrice": {{ cart.total_price }}
+};
+{% for item in cart.items %}
+window.cartJSON.products.push({
+productId: '{{ item.product.id }}',
+variantId: '{{ item.variant_id }}',
+collectionIds: ["{{ item.product.collections | map: 'id' | join: '", "' }}"],
+properties: {{ item.properties | json }} || [],
+quantity: {{ item.quantity }},
+key: '{{ item.key }}',
+title: '{{ item.title }}',
+quantity: '{{ item.quantity }}',
+handle: '{{ item.url }}',
+featured_image: '{{ item | img_url: '100x' }}',
+price: '{{ item.price }}',
+});
+{% endfor %}
+{% endif %}
+{% if content_for_header contains 'previewBarInjector' or content_for_header contains 'adminBarInjector' %}
+window.isAdminLoggedIn = true;
+{% endif %}
+</script>
+{% if content_for_header contains 'fodane.app' %}
+{% assign scriptParams = content_for_header | split: 'fodane.app' | last | split: '"' | first | split: "v=" | last %}
+{% assign shopId = content_for_header | split: 'fodane.app' | last | split: '"' | first | split: '\' | slice: 2 | first | replace: '/' %}
+<script src="https://cdn.fodane.app/assets/{{shopId}}/bundle.js?v={{scriptParams | replace: '\u0026' : '&' }}" async></script>
+{% endif %}
